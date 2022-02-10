@@ -1,0 +1,63 @@
+{
+    "targetPlatforms": [
+        "chalk", 
+        "basalt", 
+        "diorite", 
+        "aplite", 
+        "emery"
+    ], 
+    "projectType": "native", 
+    "messageKeys": {
+        "screen_color": 10000, 
+        "minute_hand_color": 10004, 
+        "clock_bg_color": 10001, 
+        "subdial_highlight_color": 10005, 
+        "display_seconds": 10006, 
+        "animate_minutes": 10007, 
+        "hour_hand_color": 10003, 
+        "clock_fg_color": 10002
+    }, 
+    "companyName": "Gonzalo Munoz", 
+    "enableMultiJS": true, 
+    "watchapp": {
+        "onlyShownOnCommunication": false, 
+        "hiddenApp": false, 
+        "watchface": true
+    }, 
+    "versionLabel": "1.0", 
+    "longName": "The Essence", 
+    "shortName": "The Essence", 
+    "name": "The Essence", 
+    "sdkVersion": "3", 
+    "displayName": "The Essence", 
+    "uuid": "07883f58-076c-41a9-b180-c2fd83825fde", 
+    "appKeys": {
+        "screen_color": 10000, 
+        "minute_hand_color": 10004, 
+        "clock_bg_color": 10001, 
+        "subdial_highlight_color": 10005, 
+        "display_seconds": 10006, 
+        "animate_minutes": 10007, 
+        "hour_hand_color": 10003, 
+        "clock_fg_color": 10002
+    }, 
+    "capabilities": [
+        "configurable"
+    ], 
+    "resources": {
+        "media": [
+            {
+                "type": "font", 
+                "characterRegex": "[0-9]", 
+                "name": "LECO_9", 
+                "file": "leco.otf"
+            }, 
+            {
+                "type": "font", 
+                "characterRegex": "[0-9]", 
+                "name": "LECO_8", 
+                "file": "leco.otf"
+            }
+        ]
+    }
+}

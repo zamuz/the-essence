@@ -1,0 +1,81 @@
+[
+{
+  "type": "heading",
+  "defaultValue": "The Essence"
+},
+{
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
+      "defaultValue": "Colors"
+    },
+    {
+      "type": "color",
+      "messageKey": "screen_color",
+      "defaultValue": "000000",
+      "label": "Screen color",
+      "allowGray": true,
+      "description": "This setting has no effect on the Pebble Time Round."
+    },
+    {
+      "type": "color",
+      "messageKey": "clock_bg_color",
+      "defaultValue": "000000",
+      "label": "Clock background",
+      "allowGray": true
+    },
+    {
+      "type": "color",
+      "messageKey": "clock_fg_color",
+      "defaultValue": "FFFFFF",
+      "label": "Clock foreground",
+      "allowGray": true
+    },
+    {
+      "type": "color",
+      "messageKey": "hour_hand_color",
+      "defaultValue": "FFFFFF",
+      "label": "Hour hand",
+      "allowGray": true
+    },
+    {
+      "type": "color",
+      "messageKey": "minute_hand_color",
+      "defaultValue": "FFFFFF",
+      "label": "Minute hand",
+      "allowGray": true
+    },
+    {
+      "type": "color",
+      "messageKey": "subdial_highlight_color",
+      "defaultValue": "FFFFFF",
+      "label": "Subdial highlight color",
+      "allowGray": true
+    }
+  ]
+},
+{
+  "type": "section",
+  "items": [
+    {
+      "type": "heading",
+      "defaultValue": "Animations"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "animate_minutes",
+      "defaultValue": true,
+      "label": "Animate every minute"
+    },
+    {
+      "type": "toggle",
+      "messageKey": "display_seconds",
+      "defaultValue": true,
+      "label": "Display seconds",
+      "description": "If seconds are turned off, date will be displayed instead."
+    }
+  ]
+},
+{ "type": "submit", "defaultValue": "Save" }
+]
