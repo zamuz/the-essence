@@ -41,14 +41,20 @@ void watch_model_handle_clock_change(ClockState state) {
 
 void watch_model_handle_time_change(struct tm *tick_time) {
   //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "MINUTES update");
-  if (enamel_get_animate_minutes())
+  if (enamel_get_animate_minutes()){
+    if (clock_state.minute_angle == 354) {
+      clock_state.minute_angle = -6;
+      if (clock_state.hour_angle == 330) clock_state.hour_angle = -2;
+      if (clock_state.day_angle == 327 && tick_time->tm_hour == 23) clock_state.day_angle = -33;
+    }
     schedule_minute_animation(clock_state);
+  }
   else {
     clock_state.minute_angle = tick_time->tm_min * 6;
     clock_state.hour_angle = tick_time->tm_hour%12 * 30;
     clock_state.day_angle = (tick_time->tm_wday-1)*52 + 13;
     clock_state.second_angle = tick_time->tm_sec * 6;
-    clock_state.date = tick_time->tm_mday;
+    clock_state.date = get_day_angle(tick_time->tm_mday);
     clock_state.month = tick_time->tm_mon;
     layer_mark_dirty(clock_layer);
     layer_mark_dirty(seconds_date_layer);

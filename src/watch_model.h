@@ -19,7 +19,7 @@
 
 #include <pebble.h>
 
-#define CLOCK_ANIMATION_LENGTH 2000
+#define CLOCK_ANIMATION_LENGTH 2500
 #define CLOCK_ANIMATION_DELAY 0
 #define MINUTE_ANIMATION_LENGTH 300
 
@@ -42,3 +42,4 @@ void watch_model_handle_seconds_change(struct tm *tick_time);
 void watch_model_handle_config_change(void);
 void schedule_minute_animation(ClockState current_state);
 void update_tick_timer_subscription(void);
+int get_day_angle(int day);

@@ -74,6 +74,34 @@ static void prv_finish_animation(Animation *animation, bool finished, void *cont
   update_tick_timer_subscription();
 }
 
+int get_day_angle(int day) {
+  int angle = 0;
+  switch (day) {
+    case 0: // sunday
+      angle = 327;
+      break;
+    case 1: // monday
+      angle = 30;
+      break;
+    case 2: // tuesday
+      angle = 76;
+      break;
+    case 3: // wednesday
+      angle = 127;
+      break;
+    case 4: // thursday
+      angle = 165;
+      break;
+    case 5: // friday
+      angle = 220;
+      break;
+    case 6: // saturday
+      angle = 270;
+      break;
+  }
+  return angle;
+}
+
 static Animation *prv_make_clock_animation(int duration, ClockState start_state) {
   Animation *clock_animation = animation_create();
   static const AnimationImplementation animation_implementation = {
@@ -91,8 +119,8 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state)
   clock_context->end_state = (ClockState) {
     .minute_angle = now->tm_min * 6,
     .hour_angle = now->tm_hour%12 * 30,
-    .day_angle = (now->tm_wday-1)*52 + 13,
-    .second_angle = now->tm_sec*6,
+    .day_angle = get_day_angle(now->tm_wday),
+    .second_angle = now->tm_sec*6 + duration*.001,
     .date = now->tm_mday,
     .month = now->tm_mon };
   animation_set_handlers(clock_animation, (AnimationHandlers) {
