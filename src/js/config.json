@@ -63,6 +63,16 @@
       "defaultValue": "Animations"
     },
     {
+      "type": "slider",
+      "messageKey": "intro_duration",
+      "defaultValue": 2000,
+      "label": "Intro animation duration",
+      "description": "Animation duration in milliseconds.",
+      "min": 1000,
+      "max": 3000,
+      "step": 100
+    },
+    {
       "type": "toggle",
       "messageKey": "animate_minutes",
       "defaultValue": true,

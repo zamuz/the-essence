@@ -118,7 +118,7 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state)
   struct tm *now = localtime(&tm);
   clock_context->end_state = (ClockState) {
     .minute_angle = now->tm_min * 6,
-    .hour_angle = now->tm_hour%12 * 30,
+    .hour_angle = (now->tm_hour%12)*30 + now->tm_min*.48,
     .day_angle = get_day_angle(now->tm_wday),
     .second_angle = now->tm_sec*6 + duration*.001,
     .date = now->tm_mday,
@@ -142,7 +142,7 @@ void watch_model_start_intro() {
     .second_angle = 0,
     .date = 0,
     .month = 0 };
-  Animation *const clock_animation = prv_make_clock_animation(CLOCK_ANIMATION_LENGTH, start_state);
+  Animation *const clock_animation = prv_make_clock_animation(enamel_get_intro_duration(), start_state);
   animation_schedule(clock_animation);
 }
 

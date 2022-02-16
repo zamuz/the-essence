@@ -22,7 +22,6 @@
 #include "watch_model.h"
 #include <pebble-events/pebble-events.h>
 #include <ctype.h>
-#include "text_render.h"
 
 static Window *window;
 static Layer *clock_layer;
@@ -51,7 +50,7 @@ void watch_model_handle_time_change(struct tm *tick_time) {
   }
   else {
     clock_state.minute_angle = tick_time->tm_min * 6;
-    clock_state.hour_angle = tick_time->tm_hour%12 * 30;
+    clock_state.hour_angle = tick_time->tm_hour%12 * 30 + clock_state.minute_angle*.08;
     clock_state.day_angle = (tick_time->tm_wday-1)*52 + 13;
     clock_state.second_angle = tick_time->tm_sec * 6;
     clock_state.date = get_day_angle(tick_time->tm_mday);
@@ -80,14 +79,11 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
     GRect layer_bounds = layer_get_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
-    GRect seconds_center_rect = (GRect) { .size = GSize(w*.5, h*.5) };
+    GRect seconds_center_rect = (GRect) { .size = GSize(w*.48, h*.48) };
     grect_align(&seconds_center_rect, &layer_bounds, GAlignCenter, false);
     GRect seconds_frame = grect_centered_from_polar(seconds_center_rect, GOvalScaleModeFitCircle,
                                                     DEG_TO_TRIGANGLE(clock_state.minute_angle-55),
-                                                    GSize(w*.17, h*.17));
-    // second dial background
-    graphics_context_set_fill_color(ctx, enamel_get_clock_bg_color());
-    graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.09, 0, TRIG_MAX_ANGLE);
+                                                    GSize(w*.19, h*.19));
     if (enamel_get_display_seconds()) {
         // second dial markers
         int sec;
@@ -149,14 +145,11 @@ static void draw_day(Layer *layer, GContext *ctx) {
     GRect layer_bounds = layer_get_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
-    GRect day_center_rect = (GRect) { .size = GSize(w*.5, h*.5) };
+    GRect day_center_rect = (GRect) { .size = GSize(w*.48, h*.48) };
     grect_align(&day_center_rect, &layer_bounds, GAlignCenter, false);
     GRect day_frame = grect_centered_from_polar(day_center_rect, GOvalScaleModeFitCircle,
                                                 DEG_TO_TRIGANGLE(clock_state.minute_angle+55),
-                                                GSize(w*.17, h*.17));
-    // day dial background
-    graphics_context_set_fill_color(ctx, enamel_get_clock_bg_color());
-    graphics_fill_radial(ctx, day_frame, GOvalScaleModeFitCircle, w*.09, 0, TRIG_MAX_ANGLE);
+                                                GSize(w*.19, h*.19));
     // day dial markers
     int day;
     for (day = 0; day < 7; day = day+1 ) {
@@ -189,6 +182,7 @@ ResHandle get_font_handle(void) {
     ResHandle resource;
     switch (PBL_PLATFORM_TYPE_CURRENT) {
         case PlatformTypeChalk:
+        case PlatformTypeEmery:
             resource = resource_get_handle(RESOURCE_ID_LECO_9);
         break;
         default:
@@ -214,7 +208,7 @@ static void draw_marks(Layer *layer, GContext *ctx) {
     grect_align(&text_frame, &layer_bounds, GAlignCenter, false);
     GRect circle_frame = (GRect) { .size = GSize(w*.98, h*.98) };
     grect_align(&circle_frame, &layer_bounds, GAlignCenter, false);
-    // minute dial background
+    // clock background
     graphics_context_set_fill_color(ctx, enamel_get_clock_bg_color());
     graphics_fill_radial(ctx, circle_frame, GOvalScaleModeFitCircle, w*.49, 0, TRIG_MAX_ANGLE);
     GRect inner_frame = (GRect) { .size = GSize(w*.9, h*.9) };
@@ -257,7 +251,7 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GPoint min_from = gpoint_from_polar(rect_min_from, GOvalScaleModeFitCircle,
                                         DEG_TO_TRIGANGLE(clock_state.minute_angle));
     // end point
-    GRect rect_min_to = (GRect) { .size = GSize(w*.8, h*.8) };
+    GRect rect_min_to = (GRect) { .size = GSize(w*.82, h*.82) };
     grect_align(&rect_min_to, &layer_bounds, GAlignCenter, false);
     GPoint min_to = gpoint_from_polar(rect_min_to, GOvalScaleModeFitCircle,
                                       DEG_TO_TRIGANGLE(clock_state.minute_angle));
@@ -268,12 +262,10 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     // hour dial center
     GRect rect_hour_center = (GRect) { .size = GSize(w*.27, h*.27) };
     grect_align(&rect_hour_center, &layer_bounds, GAlignCenter, false);
-    GPoint hour_center = gpoint_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
-		                           DEG_TO_TRIGANGLE(clock_state.minute_angle + 180));
     // hour dial
-    GRect hour_rect = GRect(hour_center.x - w*.18, hour_center.y - h*.18, w*.36, h*.36);
-    graphics_context_set_fill_color(ctx, enamel_get_clock_bg_color());
-    graphics_fill_radial(ctx, hour_rect, GOvalScaleModeFitCircle, w*.18, 0, TRIG_MAX_ANGLE);
+    GRect hour_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
+                                                DEG_TO_TRIGANGLE(clock_state.minute_angle + 180),
+						GSize(w*.34, h*.34));
     int hour;
     char s_hour_string[5];
     graphics_context_set_text_color(ctx, enamel_get_clock_fg_color());
@@ -290,15 +282,18 @@ static void draw_clock(Layer *layer, GContext *ctx) {
                            GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     }
     // hour hand
-    GRect rect_hour_from = (GRect) { .size = GSize(hour_rect.size.w*.1,
-		                                   hour_rect.size.h*.1) };
-    grect_align(&rect_hour_from, &hour_rect, GAlignCenter, false);
-    GPoint hour_from = gpoint_from_polar(rect_hour_from, GOvalScaleModeFitCircle,
-		                         DEG_TO_TRIGANGLE(clock_state.hour_angle + 180));
+    // start point
+    GRect hour_from_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
+                                                     DEG_TO_TRIGANGLE(clock_state.minute_angle+180),
+                                                     GSize(w*.03, h*.03));
+    GPoint hour_from = gpoint_from_polar(hour_from_rect, GOvalScaleModeFitCircle,
+                                         DEG_TO_TRIGANGLE(clock_state.hour_angle+180));
     // end point
-    GRect hour_hand_rect = GRect(hour_center.x - w*.13, hour_center.y - h*.13, w*.26, h*.26);
-    GPoint hour_to = gpoint_from_polar(hour_hand_rect, GOvalScaleModeFitCircle,
-		                       DEG_TO_TRIGANGLE(clock_state.hour_angle + clock_state.minute_angle*.08));
+    GRect hour_to_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
+                                                   DEG_TO_TRIGANGLE(clock_state.minute_angle+180),
+						   GSize(w*.24, h*.24));
+    GPoint hour_to = gpoint_from_polar(hour_to_rect, GOvalScaleModeFitCircle,
+                                       DEG_TO_TRIGANGLE(clock_state.hour_angle));
     // draw hour hand
     graphics_context_set_stroke_width(ctx, 3);
     graphics_context_set_stroke_color(ctx, enamel_get_hour_hand_color());

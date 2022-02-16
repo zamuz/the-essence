@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "author": "Gonzalo Munoz",
   "private": true,
   "dependencies": {
@@ -37,7 +37,8 @@
       "minute_hand_color",
       "subdial_highlight_color",
       "display_seconds",
-      "animate_minutes"
+      "animate_minutes",
+      "intro_duration"
     ],
     "enableMultiJS": true,
     "displayName": "The Essence",
