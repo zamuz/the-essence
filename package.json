@@ -1,5 +1,5 @@
 {
-  "version": "1.2",
+  "version": "1.3",
   "author": "Gonzalo Munoz",
   "private": true,
   "dependencies": {
@@ -15,16 +15,28 @@
       "media": [
         {
 	  "type": "font",
-	  "name": "LECO_9",
-	  "file": "leco.otf",
+	  "name": "PIXOLLETTA_10",
+	  "file": "pixolletta.ttf",
 	  "characterRegex": "[0-9]"
 	},
         {
-	  "type": "font",
-	  "name": "LECO_8",
-	  "file": "leco.otf",
-	  "characterRegex": "[0-9]"
-	}
+          "type": "font",
+          "name": "GOODBYEDESPAIR_8",
+          "file": "goodbyeDespair.ttf",
+          "characterRegex": "[0-9]"
+        },
+        {
+          "type": "font",
+          "name": "ADVOCUT_10",
+          "file": "AdvoCut.ttf",
+          "characterRegex": "[0-9]"
+        },
+        {
+          "type": "font",
+          "name": "SILLYPIXEL_11",
+          "file": "sillypixel.ttf",
+          "characterRegex": "[0-9]"
+        }
       ]
     },
     "projectType": "native",
@@ -38,7 +50,10 @@
       "subdial_highlight_color",
       "display_seconds",
       "animate_minutes",
-      "intro_duration"
+      "intro_duration",
+      "date_style",
+      "tap_to_animate",
+      "clock_font"
     ],
     "enableMultiJS": true,
     "displayName": "The Essence",

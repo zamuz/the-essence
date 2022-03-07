@@ -31,6 +31,20 @@ static Layer *marks_layer;
 ClockState clock_state;
 GFont digital_font;
 
+ResHandle get_font_handle(void) {
+    ResHandle resource;
+    bool square = strcmp(enamel_get_clock_font(), "SQUARE") == 0;
+    switch (PBL_PLATFORM_TYPE_CURRENT) {
+        case PlatformTypeChalk:
+        case PlatformTypeEmery:
+            resource = resource_get_handle(square ? RESOURCE_ID_SILLYPIXEL_11 : RESOURCE_ID_PIXOLLETTA_10);
+        break;
+        default:
+	    resource = resource_get_handle(square ? RESOURCE_ID_GOODBYEDESPAIR_8 : RESOURCE_ID_ADVOCUT_10);
+    }
+    return resource;
+}
+
 void watch_model_handle_clock_change(ClockState state) {
   clock_state = state;
   layer_mark_dirty(clock_layer);
@@ -43,16 +57,18 @@ void watch_model_handle_time_change(struct tm *tick_time) {
   if (enamel_get_animate_minutes()){
     if (clock_state.minute_angle == 354) {
       clock_state.minute_angle = -6;
-      if (clock_state.hour_angle == 330) clock_state.hour_angle = -2;
-      if (clock_state.day_angle == 327 && tick_time->tm_hour == 23) clock_state.day_angle = -33;
+      if (clock_state.hour_angle >= 358) clock_state.hour_angle = -2;
+      if (clock_state.day_angle == 327 && tick_time->tm_hour == 0) clock_state.day_angle = -33;
     }
     schedule_minute_animation(clock_state);
   }
   else {
     clock_state.minute_angle = tick_time->tm_min * 6;
     clock_state.hour_angle = tick_time->tm_hour%12 * 30 + clock_state.minute_angle*.08;
-    clock_state.day_angle = (tick_time->tm_wday-1)*52 + 13;
+    clock_state.day_angle = get_day_angle(tick_time->tm_wday);
     clock_state.second_angle = tick_time->tm_sec * 6;
+    clock_state.month_angle = tick_time->tm_mon*30,
+    clock_state.tick_month_angle = tick_time->tm_mon*30 + 30,
     clock_state.date = get_day_angle(tick_time->tm_mday);
     clock_state.month = tick_time->tm_mon;
     layer_mark_dirty(clock_layer);
@@ -68,11 +84,27 @@ void watch_model_handle_seconds_change(struct tm *tick_time) {
 }
 
 void watch_model_handle_config_change(void) {
-  update_tick_timer_subscription();
+  update_subscriptions();
   layer_mark_dirty(clock_layer);
   layer_mark_dirty(seconds_date_layer);
   layer_mark_dirty(day_layer);
+  fonts_unload_custom_font(digital_font);
+  digital_font = fonts_load_custom_font(get_font_handle());
   //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "CONFIG update");
+}
+
+void draw_tick_marks(GContext *ctx, GRect frame, int w) {
+    int sec;
+    for (sec = 0; sec < 360; sec = sec+30 ) {
+        int angle_from = sec - 2;
+        int angle_to = sec + 5;
+        GColor mark_color = (sec == 0) ?
+    	                enamel_get_subdial_highlight_color() :
+    			enamel_get_clock_fg_color();
+        graphics_context_set_fill_color(ctx, mark_color);
+        graphics_fill_radial(ctx, frame, GOvalScaleModeFitCircle, w*.025,
+                             DEG_TO_TRIGANGLE(angle_from), DEG_TO_TRIGANGLE(angle_to));
+    }
 }
 
 static void draw_date_seconds(Layer *layer, GContext *ctx) {
@@ -83,20 +115,10 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
     grect_align(&seconds_center_rect, &layer_bounds, GAlignCenter, false);
     GRect seconds_frame = grect_centered_from_polar(seconds_center_rect, GOvalScaleModeFitCircle,
                                                     DEG_TO_TRIGANGLE(clock_state.minute_angle-55),
-                                                    GSize(w*.19, h*.19));
+                                                    GSize(w*.2, h*.2));
     if (enamel_get_display_seconds()) {
         // second dial markers
-        int sec;
-        for (sec = 0; sec < 360; sec = sec+30 ) {
-            int angle_from = sec - 2;
-            int angle_to = sec + 5;
-            GColor mark_color = (sec == 0) ?
-		                enamel_get_subdial_highlight_color() :
-				enamel_get_clock_fg_color();
-            graphics_context_set_fill_color(ctx, mark_color);
-            graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.025,
-                                 DEG_TO_TRIGANGLE(angle_from), DEG_TO_TRIGANGLE(angle_to));
-        }
+	draw_tick_marks(ctx, seconds_frame, w);
         // seconds hand
         // end point
         GPoint sec_to = gpoint_from_polar(seconds_frame, GOvalScaleModeFitCircle,
@@ -108,34 +130,41 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
     }
     else {
         // show date
-	int month;
-	for(month = 0; month < 12; month = month+1) {
-	    int angle_from = month * 30;
-	    int angle_to = angle_from + 20;
-	    int fill;
-	    GColor month_color;
-	    if (month == clock_state.month) {
-	        month_color = enamel_get_subdial_highlight_color();
-		fill = w*.03;
-	    }
-	    else {
-	        month_color = enamel_get_clock_fg_color();
-		fill = w*.012;
-	    }
-	    graphics_context_set_fill_color(ctx, month_color);
-	    graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, fill,
-			         DEG_TO_TRIGANGLE(angle_from), DEG_TO_TRIGANGLE(angle_to));
+	if (strcmp(enamel_get_date_style(), "tick_marks") == 0) {
+	    // months as tick marks
+            draw_tick_marks(ctx, seconds_frame, w);
+	    // month hand
+	    graphics_context_set_fill_color(ctx, enamel_get_subdial_highlight_color());
+            graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.025,
+                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle-10),
+                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle+10));
 	}
-	char s_date_string[3];
-	snprintf(s_date_string, sizeof(s_date_string), "%d", clock_state.date);
+	else {
+	    // months as bars
+	    int month;
+	    for(month = 0; month < 12; month = month+1) {
+	        int angle_from = month * 30;
+	        int angle_to = angle_from + 22;
+	        graphics_context_set_fill_color(ctx, enamel_get_clock_fg_color());
+	        graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.012,
+	    		         DEG_TO_TRIGANGLE(angle_from), DEG_TO_TRIGANGLE(angle_to));
+	    }
+	    graphics_context_set_fill_color(ctx, enamel_get_subdial_highlight_color());
+	    graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.03,
+                                 DEG_TO_TRIGANGLE(clock_state.month_angle),
+	    		         DEG_TO_TRIGANGLE(clock_state.month_angle+22));
+
+	}
+        char s_date_string[3];
+        snprintf(s_date_string, sizeof(s_date_string), "%d", clock_state.date);
         GSize text_size = graphics_text_layout_get_content_size(s_date_string, digital_font,
                                                                 layer_bounds,
                                                                 GTextOverflowModeFill,
                                                                 GTextAlignmentCenter);
         GRect text_box = (GRect) { .size = text_size };
-	grect_align(&text_box, &seconds_frame, GAlignCenter, false);
+        grect_align(&text_box, &seconds_frame, GAlignCenter, false);
         graphics_context_set_text_color(ctx, enamel_get_clock_fg_color());
-	graphics_draw_text(ctx, s_date_string, digital_font, text_box,
+        graphics_draw_text(ctx, s_date_string, digital_font, text_box,
                            GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     }
 
@@ -178,19 +207,6 @@ static void draw_day(Layer *layer, GContext *ctx) {
     graphics_draw_line(ctx, grect_center_point(&day_frame), day_to);
 }
 
-ResHandle get_font_handle(void) {
-    ResHandle resource;
-    switch (PBL_PLATFORM_TYPE_CURRENT) {
-        case PlatformTypeChalk:
-        case PlatformTypeEmery:
-            resource = resource_get_handle(RESOURCE_ID_LECO_9);
-        break;
-        default:
-            resource = resource_get_handle(RESOURCE_ID_LECO_8);
-    }
-    return resource;
-}
-
 static void draw_marks(Layer *layer, GContext *ctx) {
     GRect layer_bounds = layer_get_bounds(layer);
     // screen background
@@ -206,6 +222,8 @@ static void draw_marks(Layer *layer, GContext *ctx) {
     int min;
     GRect text_frame = (GRect) { .size = GSize(w*.805, h*.805) };
     grect_align(&text_frame, &layer_bounds, GAlignCenter, false);
+    int text_position = text_frame.origin.y;
+    text_frame.origin.y = text_position - 1;
     GRect circle_frame = (GRect) { .size = GSize(w*.98, h*.98) };
     grect_align(&circle_frame, &layer_bounds, GAlignCenter, false);
     // clock background
@@ -266,6 +284,8 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GRect hour_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
                                                 DEG_TO_TRIGANGLE(clock_state.minute_angle + 180),
 						GSize(w*.34, h*.34));
+    int text_position = hour_rect.origin.y;
+    hour_rect.origin.y = text_position - 1;
     int hour;
     char s_hour_string[5];
     graphics_context_set_text_color(ctx, enamel_get_clock_fg_color());
@@ -285,7 +305,7 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     // start point
     GRect hour_from_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
                                                      DEG_TO_TRIGANGLE(clock_state.minute_angle+180),
-                                                     GSize(w*.03, h*.03));
+                                                     GSize(w*.05, h*.05));
     GPoint hour_from = gpoint_from_polar(hour_from_rect, GOvalScaleModeFitCircle,
                                          DEG_TO_TRIGANGLE(clock_state.hour_angle+180));
     // end point
@@ -336,6 +356,10 @@ static void window_unload(Window *window) {
   fonts_unload_custom_font(digital_font);
   layer_destroy(clock_layer);
   layer_destroy(seconds_date_layer);
+}
+
+void accel_tap_handler(AccelAxisType axis, int32_t direction) {
+    schedule_tap_animation(clock_state);
 }
 
 static void init(void) {

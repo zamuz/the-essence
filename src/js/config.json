@@ -8,7 +8,7 @@
   "items": [
     {
       "type": "heading",
-      "defaultValue": "Colors"
+      "defaultValue": "Colors & style"
     },
     {
       "type": "color",
@@ -52,7 +52,40 @@
       "defaultValue": "FFFFFF",
       "label": "Subdial highlight color",
       "allowGray": true
-    }
+    },
+    {
+      "type": "radiogroup",
+      "messageKey": "clock_font",
+      "defaultValue": "SQUARE",
+      "label": "Clock font style",
+      "options": [
+	{
+          "label": "Square",
+	  "value": "SQUARE"
+	},
+	{
+	  "label": "Rounded",
+	  "value": "ROUNDED"
+	}
+      ]
+    },
+    {
+      "type": "radiogroup",
+      "messageKey": "date_style",
+      "label": "Date style",
+      "description": "Display months as bars or tick marks (when seconds are disabled).",
+      "defaultValue": "bars",
+      "options": [
+        { 
+          "label": "Bars", 
+          "value": "bars" 
+        },
+        { 
+          "label": "Tick marks", 
+          "value": "tick_marks" 
+        }
+      ]
+  }
   ]
 },
 {
@@ -84,6 +117,12 @@
       "defaultValue": true,
       "label": "Display seconds",
       "description": "If seconds are turned off, date will be displayed instead."
+    },
+    {
+      "type": "toggle",
+      "messageKey": "tap_to_animate",
+      "defaultValue": true,
+      "label": "Tap/shake to animate"
     }
   ]
 },

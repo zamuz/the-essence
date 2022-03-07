@@ -39,6 +39,8 @@ static ClockState prv_interpolate_clock_states(ClockState *start, ClockState *en
     .hour_angle = prv_interpolate_int64_linear(start->hour_angle, end->hour_angle, progress),
     .day_angle = prv_interpolate_int64_linear(start->day_angle, end->day_angle, progress),
     .second_angle = prv_interpolate_int64_linear(start->second_angle, end->second_angle, progress),
+    .month_angle = prv_interpolate_int64_linear(start->month_angle, end->month_angle, progress),
+    .tick_month_angle = prv_interpolate_int64_linear(start->tick_month_angle, end->tick_month_angle, progress),
     .date = prv_interpolate_int64_linear(start->date, end->date, progress),
     .month = prv_interpolate_int64_linear(start->month, end->month, progress)
   };
@@ -63,15 +65,19 @@ static void prv_handle_time_update(struct tm *tick_time, TimeUnits units_changed
   if (units_changed & MINUTE_UNIT) watch_model_handle_time_change(tick_time);
 }
 
-void update_tick_timer_subscription(void) {
+void update_subscriptions(void) {
   TimeUnits units = enamel_get_display_seconds() ? (SECOND_UNIT | MINUTE_UNIT) : MINUTE_UNIT;
   tick_timer_service_subscribe(units, prv_handle_time_update);
+  if (enamel_get_tap_to_animate())
+      accel_tap_service_subscribe(accel_tap_handler);
+  else
+      accel_tap_service_unsubscribe();
 }
 
 static void prv_finish_animation(Animation *animation, bool finished, void *context) {
   const time_t t = time(NULL);
   prv_handle_time_update(localtime(&t), SECOND_UNIT);
-  update_tick_timer_subscription();
+  update_subscriptions();
 }
 
 int get_day_angle(int day) {
@@ -90,7 +96,7 @@ int get_day_angle(int day) {
       angle = 127;
       break;
     case 4: // thursday
-      angle = 165;
+      angle = 168;
       break;
     case 5: // friday
       angle = 220;
@@ -102,7 +108,7 @@ int get_day_angle(int day) {
   return angle;
 }
 
-static Animation *prv_make_clock_animation(int duration, ClockState start_state) {
+static Animation *prv_make_clock_animation(int duration, ClockState start_state, AnimationCurve curve) {
   Animation *clock_animation = animation_create();
   static const AnimationImplementation animation_implementation = {
     .update = prv_update_clock_animation,
@@ -111,7 +117,7 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state)
   animation_set_implementation(clock_animation, &animation_implementation);
   animation_set_duration(clock_animation, duration);
   animation_set_delay(clock_animation, CLOCK_ANIMATION_DELAY);
-  animation_set_curve(clock_animation, AnimationCurveEaseInOut);
+  animation_set_curve(clock_animation, curve);
   ClockAnimationContext *clock_context = malloc(sizeof(*clock_context));
   clock_context->start_state = start_state;
   time_t tm = time(NULL);
@@ -120,7 +126,9 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state)
     .minute_angle = now->tm_min * 6,
     .hour_angle = (now->tm_hour%12)*30 + now->tm_min*.48,
     .day_angle = get_day_angle(now->tm_wday),
-    .second_angle = now->tm_sec*6 + duration*.001,
+    .second_angle = (now->tm_sec + duration*.001)*6,
+    .month_angle = now->tm_mon*30,
+    .tick_month_angle = now->tm_mon*30 + 30,
     .date = now->tm_mday,
     .month = now->tm_mon };
   animation_set_handlers(clock_animation, (AnimationHandlers) {
@@ -130,8 +138,34 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state)
 }
 
 void schedule_minute_animation(ClockState current_state) {
-  Animation *const minute_animation = prv_make_clock_animation(MINUTE_ANIMATION_LENGTH, current_state);
+  Animation *const minute_animation = prv_make_clock_animation(MINUTE_ANIMATION_LENGTH,
+                                                               current_state,
+							       AnimationCurveLinear);
   animation_schedule(minute_animation);
+}
+
+int animation_direction(void) {
+    return (rand()%2) ? 360 : -360;
+}
+
+void schedule_tap_animation(ClockState current_state) {
+    //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "TAP!");
+    ClockState start_state = (ClockState) {
+        .minute_angle = current_state.minute_angle + animation_direction(),
+        .hour_angle = current_state.hour_angle + animation_direction(),
+        .day_angle = current_state.day_angle + animation_direction(),
+        .second_angle = current_state.second_angle + animation_direction(),
+        .month_angle = current_state.month_angle + animation_direction(),
+        .tick_month_angle = current_state.tick_month_angle + animation_direction(),
+	.date = current_state.date,
+	.month = current_state.month
+    };
+    Animation *const tap_animation = prv_make_clock_animation(TAP_ANIMATION_LENGTH,
+                                                              start_state,
+							      AnimationCurveEaseInOut);
+    tick_timer_service_unsubscribe();
+    accel_tap_service_unsubscribe();
+    animation_schedule(tap_animation);
 }
 
 void watch_model_start_intro() {
@@ -140,9 +174,13 @@ void watch_model_start_intro() {
     .hour_angle = 0,
     .day_angle = 0,
     .second_angle = 0,
+    .month_angle = 0,
+    .tick_month_angle = 0,
     .date = 0,
     .month = 0 };
-  Animation *const clock_animation = prv_make_clock_animation(enamel_get_intro_duration(), start_state);
+  Animation *const clock_animation = prv_make_clock_animation(enamel_get_intro_duration(),
+                                                              start_state,
+							      AnimationCurveEaseInOut);
   animation_schedule(clock_animation);
 }
 

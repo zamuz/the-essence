@@ -21,13 +21,16 @@
 
 #define CLOCK_ANIMATION_LENGTH 2500
 #define CLOCK_ANIMATION_DELAY 0
-#define MINUTE_ANIMATION_LENGTH 300
+#define MINUTE_ANIMATION_LENGTH 200
+#define TAP_ANIMATION_LENGTH 2500
 
 typedef struct {
   int32_t minute_angle;
   int32_t hour_angle;
   int32_t day_angle;
   int32_t second_angle;
+  int32_t month_angle;
+  int32_t tick_month_angle;
   int date;
   int month;
 } ClockState;
@@ -41,5 +44,7 @@ void watch_model_handle_time_change(struct tm *tick_time);
 void watch_model_handle_seconds_change(struct tm *tick_time);
 void watch_model_handle_config_change(void);
 void schedule_minute_animation(ClockState current_state);
-void update_tick_timer_subscription(void);
+void schedule_tap_animation(ClockState current_state);
+void accel_tap_handler(AccelAxisType axis, int32_t direction);
+void update_subscriptions(void);
 int get_day_angle(int day);
