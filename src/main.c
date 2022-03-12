@@ -59,7 +59,7 @@ bool battery_saver_enabled(int hour) {
         	break;
             }
         }
-        return (hour_index >= from) && (hour_index <= to);
+        return (hour_index >= from) && (hour_index < to);
     }
     return false;
 }
