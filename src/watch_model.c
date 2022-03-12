@@ -65,10 +65,10 @@ static void prv_handle_time_update(struct tm *tick_time, TimeUnits units_changed
   if (units_changed & MINUTE_UNIT) watch_model_handle_time_change(tick_time);
 }
 
-void update_subscriptions(void) {
+void update_subscriptions(int hour) {
   TimeUnits units = enamel_get_display_seconds() ? (SECOND_UNIT | MINUTE_UNIT) : MINUTE_UNIT;
   tick_timer_service_subscribe(units, prv_handle_time_update);
-  if (enamel_get_tap_to_animate())
+  if (enamel_get_tap_to_animate() && !battery_saver_enabled(hour))
       accel_tap_service_subscribe(accel_tap_handler);
   else
       accel_tap_service_unsubscribe();
@@ -76,8 +76,9 @@ void update_subscriptions(void) {
 
 static void prv_finish_animation(Animation *animation, bool finished, void *context) {
   const time_t t = time(NULL);
-  prv_handle_time_update(localtime(&t), SECOND_UNIT);
-  update_subscriptions();
+  struct tm *now = localtime(&t);
+  prv_handle_time_update(now, SECOND_UNIT);
+  update_subscriptions(now->tm_hour);
 }
 
 int get_day_angle(int day) {
@@ -130,7 +131,9 @@ static Animation *prv_make_clock_animation(int duration, ClockState start_state,
     .month_angle = now->tm_mon*30,
     .tick_month_angle = now->tm_mon*30 + 30,
     .date = now->tm_mday,
-    .month = now->tm_mon };
+    .month = now->tm_mon,
+    .hour = now->tm_hour
+  };
   animation_set_handlers(clock_animation, (AnimationHandlers) {
     .stopped = prv_finish_animation
   }, clock_context);
@@ -168,20 +171,16 @@ void schedule_tap_animation(ClockState current_state) {
     animation_schedule(tap_animation);
 }
 
-void watch_model_start_intro() {
-  ClockState start_state = (ClockState) {
-    .minute_angle = 0,
-    .hour_angle = 0,
-    .day_angle = 0,
-    .second_angle = 0,
-    .month_angle = 0,
-    .tick_month_angle = 0,
-    .date = 0,
-    .month = 0 };
-  Animation *const clock_animation = prv_make_clock_animation(enamel_get_intro_duration(),
-                                                              start_state,
-							      AnimationCurveEaseInOut);
-  animation_schedule(clock_animation);
+void watch_model_start_intro(ClockState start_state) {
+    if (enamel_get_intro_enabled() && !battery_saver_enabled(start_state.hour)) {
+        Animation *const clock_animation = prv_make_clock_animation(enamel_get_intro_duration(),
+                                                                    start_state,
+								    AnimationCurveEaseInOut);
+        animation_schedule(clock_animation);
+    }
+    else {
+        prv_finish_animation(NULL, true, NULL);
+    }
 }
 
 static void prv_msg_received_handler(void *context) {

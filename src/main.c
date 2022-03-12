@@ -22,6 +22,7 @@
 #include "watch_model.h"
 #include <pebble-events/pebble-events.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 static Window *window;
 static Layer *clock_layer;
@@ -45,7 +46,26 @@ ResHandle get_font_handle(void) {
     return resource;
 }
 
+bool battery_saver_enabled(int hour) {
+    if (enamel_get_battery_saver_enabled()) {
+        int hours[] = { 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        int from = atoi(enamel_get_battery_saver_start());
+        int to = atoi(enamel_get_battery_saver_stop());
+        int hour_index  = -1;
+        int i;
+        for (i = from; i <= to; i++) {
+            if (hours[i] == hour) {
+                hour_index = i;
+        	break;
+            }
+        }
+        return (hour_index >= from) && (hour_index <= to);
+    }
+    return false;
+}
+
 void watch_model_handle_clock_change(ClockState state) {
+  //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "CLOCK update"); 
   clock_state = state;
   layer_mark_dirty(clock_layer);
   layer_mark_dirty(seconds_date_layer);
@@ -54,7 +74,7 @@ void watch_model_handle_clock_change(ClockState state) {
 
 void watch_model_handle_time_change(struct tm *tick_time) {
   //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "MINUTES update");
-  if (enamel_get_animate_minutes()){
+  if (enamel_get_animate_minutes() && !battery_saver_enabled(tick_time->tm_hour)){
     if (clock_state.minute_angle == 354) {
       clock_state.minute_angle = -6;
       if (clock_state.hour_angle >= 358) clock_state.hour_angle = -2;
@@ -69,7 +89,7 @@ void watch_model_handle_time_change(struct tm *tick_time) {
     clock_state.second_angle = tick_time->tm_sec * 6;
     clock_state.month_angle = tick_time->tm_mon*30,
     clock_state.tick_month_angle = tick_time->tm_mon*30 + 30,
-    clock_state.date = get_day_angle(tick_time->tm_mday);
+    clock_state.date = tick_time->tm_mday;
     clock_state.month = tick_time->tm_mon;
     layer_mark_dirty(clock_layer);
     layer_mark_dirty(seconds_date_layer);
@@ -78,19 +98,21 @@ void watch_model_handle_time_change(struct tm *tick_time) {
 }
 
 void watch_model_handle_seconds_change(struct tm *tick_time) {
+  //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "SECONDS update");
   clock_state.second_angle = tick_time->tm_sec * 6;
   layer_mark_dirty(seconds_date_layer);
-  //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "SECONDS update");
 }
 
 void watch_model_handle_config_change(void) {
-  update_subscriptions();
+  //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "CONFIG update");
+  time_t t = time(NULL);
+  struct tm *now = localtime(&t);
+  update_subscriptions(now->tm_hour);
   layer_mark_dirty(clock_layer);
   layer_mark_dirty(seconds_date_layer);
   layer_mark_dirty(day_layer);
   fonts_unload_custom_font(digital_font);
   digital_font = fonts_load_custom_font(get_font_handle());
-  //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "CONFIG update");
 }
 
 void draw_tick_marks(GContext *ctx, GRect frame, int w) {
@@ -116,7 +138,7 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
     GRect seconds_frame = grect_centered_from_polar(seconds_center_rect, GOvalScaleModeFitCircle,
                                                     DEG_TO_TRIGANGLE(clock_state.minute_angle-55),
                                                     GSize(w*.2, h*.2));
-    if (enamel_get_display_seconds()) {
+    if (enamel_get_display_seconds() && !battery_saver_enabled(clock_state.hour)) {
         // second dial markers
 	draw_tick_marks(ctx, seconds_frame, w);
         // seconds hand
@@ -136,8 +158,8 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
 	    // month hand
 	    graphics_context_set_fill_color(ctx, enamel_get_subdial_highlight_color());
             graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.025,
-                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle-10),
-                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle+10));
+                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle-12),
+                                 DEG_TO_TRIGANGLE(clock_state.tick_month_angle+12));
 	}
 	else {
 	    // months as bars
@@ -153,7 +175,6 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
 	    graphics_fill_radial(ctx, seconds_frame, GOvalScaleModeFitCircle, w*.03,
                                  DEG_TO_TRIGANGLE(clock_state.month_angle),
 	    		         DEG_TO_TRIGANGLE(clock_state.month_angle+22));
-
 	}
         char s_date_string[3];
         snprintf(s_date_string, sizeof(s_date_string), "%d", clock_state.date);
@@ -163,11 +184,12 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
                                                                 GTextAlignmentCenter);
         GRect text_box = (GRect) { .size = text_size };
         grect_align(&text_box, &seconds_frame, GAlignCenter, false);
+        int text_position = text_box.origin.y;
+        text_box.origin.y = text_position - 1;
         graphics_context_set_text_color(ctx, enamel_get_clock_fg_color());
         graphics_draw_text(ctx, s_date_string, digital_font, text_box,
                            GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     }
-
 }
 
 static void draw_day(Layer *layer, GContext *ctx) {
@@ -326,10 +348,27 @@ static void prv_app_did_focus(bool did_focus) {
   }
   app_focus_service_unsubscribe();
   watch_model_init();
-  watch_model_start_intro();
+  watch_model_start_intro(clock_state);
+}
+
+int start_angle(int hour) {
+  return (enamel_get_intro_enabled() && !battery_saver_enabled(hour)) ? ((rand()%2) ? 270 : -270) : 0;
 }
 
 static void window_load(Window *window) {
+  time_t tm = time(NULL);
+  struct tm *tick_time = localtime(&tm);
+  clock_state = (ClockState) {
+    .minute_angle = tick_time->tm_min * 6 + start_angle(tick_time->tm_hour),
+    .hour_angle = tick_time->tm_hour%12 * 30 + (tick_time->tm_min*6)*.08 + start_angle(tick_time->tm_hour),
+    .day_angle = get_day_angle(tick_time->tm_wday) + start_angle(tick_time->tm_hour),
+    .second_angle = tick_time->tm_sec * 6 + start_angle(tick_time->tm_hour),
+    .month_angle = tick_time->tm_mon*30 + start_angle(tick_time->tm_hour),
+    .tick_month_angle = tick_time->tm_mon*30 + 30 + start_angle(tick_time->tm_hour),
+    .date = (enamel_get_intro_enabled() && !battery_saver_enabled(tick_time->tm_hour)) ? 0 : tick_time->tm_mday,
+    .month = tick_time->tm_mon,
+    .hour = tick_time->tm_hour
+  };
   Layer *const window_layer = window_get_root_layer(window);
   const GRect bounds = layer_get_bounds(window_layer);
   // minute marks layer

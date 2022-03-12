@@ -33,9 +33,10 @@ typedef struct {
   int32_t tick_month_angle;
   int date;
   int month;
+  int hour;
 } ClockState;
 
-void watch_model_start_intro(void);
+void watch_model_start_intro(ClockState start_state);
 void watch_model_init(void);
 void watch_model_deinit(void);
 
@@ -46,5 +47,6 @@ void watch_model_handle_config_change(void);
 void schedule_minute_animation(ClockState current_state);
 void schedule_tap_animation(ClockState current_state);
 void accel_tap_handler(AccelAxisType axis, int32_t direction);
-void update_subscriptions(void);
+void update_subscriptions(int hour);
 int get_day_angle(int day);
+bool battery_saver_enabled(int hour);
