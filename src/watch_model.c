@@ -42,7 +42,8 @@ static ClockState prv_interpolate_clock_states(ClockState *start, ClockState *en
     .month_angle = prv_interpolate_int64_linear(start->month_angle, end->month_angle, progress),
     .tick_month_angle = prv_interpolate_int64_linear(start->tick_month_angle, end->tick_month_angle, progress),
     .date = prv_interpolate_int64_linear(start->date, end->date, progress),
-    .month = prv_interpolate_int64_linear(start->month, end->month, progress)
+    .month = prv_interpolate_int64_linear(start->month, end->month, progress),
+    .hour = end->hour
   };
 }
 
@@ -161,7 +162,8 @@ void schedule_tap_animation(ClockState current_state) {
         .month_angle = current_state.month_angle + animation_direction(),
         .tick_month_angle = current_state.tick_month_angle + animation_direction(),
 	.date = current_state.date,
-	.month = current_state.month
+	.month = current_state.month,
+	.hour = current_state.hour
     };
     Animation *const tap_animation = prv_make_clock_animation(TAP_ANIMATION_LENGTH,
                                                               start_state,

@@ -91,6 +91,7 @@ void watch_model_handle_time_change(struct tm *tick_time) {
     clock_state.tick_month_angle = tick_time->tm_mon*30 + 30,
     clock_state.date = tick_time->tm_mday;
     clock_state.month = tick_time->tm_mon;
+    clock_state.hour = tick_time->tm_hour;
     layer_mark_dirty(clock_layer);
     layer_mark_dirty(seconds_date_layer);
     layer_mark_dirty(day_layer);
@@ -118,8 +119,8 @@ void watch_model_handle_config_change(void) {
 void draw_tick_marks(GContext *ctx, GRect frame, int w) {
     int sec;
     for (sec = 0; sec < 360; sec = sec+30 ) {
-        int angle_from = sec - 2;
-        int angle_to = sec + 5;
+        int angle_from = sec - 3;
+        int angle_to = sec + 4;
         GColor mark_color = (sec == 0) ?
     	                enamel_get_subdial_highlight_color() :
     			enamel_get_clock_fg_color();
