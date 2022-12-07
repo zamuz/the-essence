@@ -71,6 +71,22 @@
     },
     {
       "type": "radiogroup",
+      "messageKey": "hand_style",
+      "defaultValue": "THICK",
+      "label": "Hand style",
+      "options": [
+        {
+          "label": "Thick",
+	  "value": "THICK"
+	},
+	{
+	  "label": "Thin",
+	  "value": "THIN"
+	}
+      ]
+    },
+    {
+      "type": "radiogroup",
       "messageKey": "date_style",
       "label": "Date style",
       "description": "Display months as bars or tick marks (when seconds are disabled).",

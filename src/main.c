@@ -144,7 +144,10 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
 	draw_tick_marks(ctx, seconds_frame, w);
         // seconds hand
         // end point
-        GPoint sec_to = gpoint_from_polar(seconds_frame, GOvalScaleModeFitCircle,
+	GRect sec_to_rect = grect_centered_from_polar(seconds_center_rect, GOvalScaleModeFitCircle,
+                                                      DEG_TO_TRIGANGLE(clock_state.minute_angle-55),
+                                                      GSize(w*.19, h*.19));
+        GPoint sec_to = gpoint_from_polar(sec_to_rect, GOvalScaleModeFitCircle,
                                           DEG_TO_TRIGANGLE(clock_state.second_angle));
         // draw seconds hand
         graphics_context_set_stroke_width(ctx, 3);
@@ -285,6 +288,8 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GRect layer_bounds = layer_get_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
+    int hand_thickness = strcmp(enamel_get_hand_style(), "THICK") == 0 ? 5 : 3;
+
     // minute hand
     // start point
     GRect rect_min_from = (GRect) { .size = GSize(w*.22, h*.22) };
@@ -297,7 +302,7 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GPoint min_to = gpoint_from_polar(rect_min_to, GOvalScaleModeFitCircle,
                                       DEG_TO_TRIGANGLE(clock_state.minute_angle));
     // draw minute hand
-    graphics_context_set_stroke_width(ctx, 3);
+    graphics_context_set_stroke_width(ctx, hand_thickness);
     graphics_context_set_stroke_color(ctx, enamel_get_minute_hand_color());
     graphics_draw_line(ctx, min_from, min_to);
     // hour dial center
@@ -329,8 +334,8 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GRect hour_from_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
                                                      DEG_TO_TRIGANGLE(clock_state.minute_angle+180),
                                                      GSize(w*.05, h*.05));
-    GPoint hour_from = gpoint_from_polar(hour_from_rect, GOvalScaleModeFitCircle,
-                                         DEG_TO_TRIGANGLE(clock_state.hour_angle+180));
+    GPoint hour_from = gpoint_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
+                                         DEG_TO_TRIGANGLE(clock_state.minute_angle+180));
     // end point
     GRect hour_to_rect = grect_centered_from_polar(rect_hour_center, GOvalScaleModeFitCircle,
                                                    DEG_TO_TRIGANGLE(clock_state.minute_angle+180),
@@ -338,7 +343,7 @@ static void draw_clock(Layer *layer, GContext *ctx) {
     GPoint hour_to = gpoint_from_polar(hour_to_rect, GOvalScaleModeFitCircle,
                                        DEG_TO_TRIGANGLE(clock_state.hour_angle));
     // draw hour hand
-    graphics_context_set_stroke_width(ctx, 3);
+    graphics_context_set_stroke_width(ctx, hand_thickness);
     graphics_context_set_stroke_color(ctx, enamel_get_hour_hand_color());
     graphics_draw_line(ctx, hour_from, hour_to);
 }

@@ -145,6 +145,8 @@ void schedule_minute_animation(ClockState current_state) {
   Animation *const minute_animation = prv_make_clock_animation(MINUTE_ANIMATION_LENGTH,
                                                                current_state,
 							       AnimationCurveLinear);
+  tick_timer_service_unsubscribe();
+  accel_tap_service_unsubscribe();
   animation_schedule(minute_animation);
 }
 

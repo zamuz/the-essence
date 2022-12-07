@@ -1,5 +1,5 @@
 {
-  "version": "1.6",
+  "version": "1.7",
   "author": "Gonzalo Munoz",
   "private": true,
   "dependencies": {
@@ -14,11 +14,11 @@
     "resources": {
       "media": [
         {
-	  "type": "font",
-	  "name": "PIXOLLETTA_10",
-	  "file": "pixolletta.ttf",
-	  "characterRegex": "[0-9]"
-	},
+          "type": "font",
+          "name": "PIXOLLETTA_10",
+          "file": "pixolletta.ttf",
+          "characterRegex": "[0-9]"
+        },
         {
           "type": "font",
           "name": "GOODBYEDESPAIR_8",
@@ -52,6 +52,7 @@
       "animate_minutes",
       "intro_duration",
       "date_style",
+      "hand_style",
       "tap_to_animate",
       "clock_font",
       "battery_saver_enabled",
