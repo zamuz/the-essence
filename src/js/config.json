@@ -129,12 +129,6 @@
     },
     {
       "type": "toggle",
-      "messageKey": "animate_minutes",
-      "defaultValue": true,
-      "label": "Animate every minute"
-    },
-    {
-      "type": "toggle",
       "messageKey": "display_seconds",
       "defaultValue": true,
       "label": "Display seconds",

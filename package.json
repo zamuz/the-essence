@@ -1,5 +1,5 @@
 {
-  "version": "1.7",
+  "version": "1.81",
   "author": "Gonzalo Munoz",
   "private": true,
   "dependencies": {
@@ -49,7 +49,6 @@
       "minute_hand_color",
       "subdial_highlight_color",
       "display_seconds",
-      "animate_minutes",
       "intro_duration",
       "date_style",
       "hand_style",

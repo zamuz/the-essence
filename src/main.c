@@ -74,28 +74,18 @@ void watch_model_handle_clock_change(ClockState state) {
 
 void watch_model_handle_time_change(struct tm *tick_time) {
   //APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "MINUTES update");
-  if (enamel_get_animate_minutes() && !battery_saver_enabled(tick_time->tm_hour)){
-    if (clock_state.minute_angle == 354) {
-      clock_state.minute_angle = -6;
-      if (clock_state.hour_angle >= 358) clock_state.hour_angle = -2;
-      if (clock_state.day_angle == 327 && tick_time->tm_hour == 0) clock_state.day_angle = -33;
-    }
-    schedule_minute_animation(clock_state);
-  }
-  else {
-    clock_state.minute_angle = tick_time->tm_min * 6;
-    clock_state.hour_angle = tick_time->tm_hour%12 * 30 + clock_state.minute_angle*.08;
-    clock_state.day_angle = get_day_angle(tick_time->tm_wday);
-    clock_state.second_angle = tick_time->tm_sec * 6;
-    clock_state.month_angle = tick_time->tm_mon*30,
-    clock_state.tick_month_angle = tick_time->tm_mon*30 + 30,
-    clock_state.date = tick_time->tm_mday;
-    clock_state.month = tick_time->tm_mon;
-    clock_state.hour = tick_time->tm_hour;
-    layer_mark_dirty(clock_layer);
-    layer_mark_dirty(seconds_date_layer);
-    layer_mark_dirty(day_layer);
-  }
+  clock_state.minute_angle = tick_time->tm_min * 6;
+  clock_state.hour_angle = tick_time->tm_hour%12 * 30 + clock_state.minute_angle*.08;
+  clock_state.day_angle = get_day_angle(tick_time->tm_wday);
+  clock_state.second_angle = tick_time->tm_sec * 6;
+  clock_state.month_angle = tick_time->tm_mon*30,
+  clock_state.tick_month_angle = tick_time->tm_mon*30 + 30,
+  clock_state.date = tick_time->tm_mday;
+  clock_state.month = tick_time->tm_mon;
+  clock_state.hour = tick_time->tm_hour;
+  layer_mark_dirty(clock_layer);
+  layer_mark_dirty(seconds_date_layer);
+  layer_mark_dirty(day_layer);
 }
 
 void watch_model_handle_seconds_change(struct tm *tick_time) {
@@ -131,7 +121,7 @@ void draw_tick_marks(GContext *ctx, GRect frame, int w) {
 }
 
 static void draw_date_seconds(Layer *layer, GContext *ctx) {
-    GRect layer_bounds = layer_get_bounds(layer);
+    GRect layer_bounds = layer_get_unobstructed_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
     GRect seconds_center_rect = (GRect) { .size = GSize(w*.48, h*.48) };
@@ -197,7 +187,7 @@ static void draw_date_seconds(Layer *layer, GContext *ctx) {
 }
 
 static void draw_day(Layer *layer, GContext *ctx) {
-    GRect layer_bounds = layer_get_bounds(layer);
+    GRect layer_bounds = layer_get_unobstructed_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
     GRect day_center_rect = (GRect) { .size = GSize(w*.48, h*.48) };
@@ -234,7 +224,7 @@ static void draw_day(Layer *layer, GContext *ctx) {
 }
 
 static void draw_marks(Layer *layer, GContext *ctx) {
-    GRect layer_bounds = layer_get_bounds(layer);
+    GRect layer_bounds = layer_get_unobstructed_bounds(layer);
     // screen background
     if (PBL_PLATFORM_TYPE_CURRENT == PlatformTypeChalk)
         graphics_context_set_fill_color(ctx, GColorBlack);
@@ -285,7 +275,7 @@ static void draw_marks(Layer *layer, GContext *ctx) {
 }
 
 static void draw_clock(Layer *layer, GContext *ctx) {
-    GRect layer_bounds = layer_get_bounds(layer);
+    GRect layer_bounds = layer_get_unobstructed_bounds(layer);
     int w = layer_bounds.size.w;
     int h = layer_bounds.size.h;
     int hand_thickness = strcmp(enamel_get_hand_style(), "THICK") == 0 ? 5 : 3;
